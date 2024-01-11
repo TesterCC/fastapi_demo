@@ -48,7 +48,7 @@ pip install -U pip setuptools -i https://pypi.tuna.tsinghua.edu.cn/simple
 pip freeze > ./req.txt
 ```
 
-## 6. API docs
+## 6.API docs
 
 ```
 # official docs:
@@ -60,9 +60,12 @@ https://fastapi.tiangolo.com/tutorial/first-steps/
 # curl http://127.0.0.1:8000
 ```
 
-## 7. curl testcase
+## 7.Testcase
 todo
 
-## 8. docker-compose FastAPI
+## 8.FastAPI docker-compose 
 
 https://stackoverflow.com/questions/70730551/pycharm-debugger-setup-with-fastapi-and-docker-compose
+
+# 9.Todo
+2-6 https://www.imooc.com/video/22981
