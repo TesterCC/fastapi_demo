@@ -23,6 +23,8 @@ Git Repo: https://github.com/liaogx/fastapi-tutorial
 ## 3.Official
 Documentation: https://fastapi.tiangolo.com/zh/tutorial/
 Source Code: https://github.com/tiangolo/fastapi
+Local Example: `~\git_workspace\ws_python\fastapi-tutorial`
+Local Self Github repo: `~\git_workspace\ws_python\fastapi_demo`
 
 ## 4.Launch
 write code in main.py, then run command: uvicorn main:app --reload
@@ -69,4 +71,5 @@ https://stackoverflow.com/questions/70730551/pycharm-debugger-setup-with-fastapi
 
 # 9.Todo
 2-6 https://www.imooc.com/video/22981
-03：22
+10:30
+
