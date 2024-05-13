@@ -64,3 +64,7 @@ def path_params_validate(
         num: int = Path(..., title="Your Number", description="不可描述", ge=1, le=10),   # 1 < num < 10
 ):
     return num
+
+
+"""Query Parameters and String Validations 查询参数和字符串验证"""
+# https://www.imooc.com/video/22985
