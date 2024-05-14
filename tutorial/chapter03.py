@@ -1,9 +1,11 @@
 # -*- coding:utf-8 -*-
-
+from datetime import date
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from fastapi import APIRouter, Path, Query
+from pydantic import BaseModel, Field
+
+from fastapi import APIRouter, Path, Query, Body, Cookie, Header
 
 app03 = APIRouter()
 
@@ -107,5 +109,71 @@ def query_params_validate(
 """Request Body and Fields 请求体和字段"""
 
 
-"""Request Body + Path parameters + Query parameters 多参数混合"""
+class CityInfo(BaseModel):
+    name: str = Field(..., example="Beijing")  # example是注解的作用，值不会被验证
+    country: str
+    country_code: str = None  # 给一个默认值
+    country_population: int = Field(default=800, title="人口数量", description="国家的人口数量", ge=800)   # display more info in swagger doc
+
+    # use sub config, can see example in swagger doc
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "Shanghai",
+                "country": "China",
+                "country_code": "CN",
+                "country_population": 1400000000,
+            }
+        }
+
+
+@app03.post("/request_body/city", description="request body check")
+def city_info(city: CityInfo):
+    print(city.name, city.country)  # 当在IDE中输入city.的时候，属性会自动弹出
+    return city.dict()
+
+
+"""3-5 Attention: Request Body + Path parameters + Query parameters 多参数混合"""
+
+
+@app03.put("/request_body/city/{name}")
+def mix_city_info(
+    name: str,   # 城市名称
+    city01: CityInfo,
+    city02: CityInfo,  # 城市信息，Body可以是多个的  比如city02 也可以用 CityInfo2 模型
+    confirmed: int = Query(ge=0, description="确认数", default=0),
+    offline: int = Query(ge=0, description="离线数", default=0),
+):
+    if name == "SH":
+        return {"Shanghai": {"confirmed": confirmed, "offline": offline}}
+    return city01.dict(), city02.dict()
+
+
+@app03.put("/request_body/multiple/parameters")
+def body_multiple_parameters(
+    city: CityInfo = Body(..., embed=True),  # 当只有一个Body参数的时候，embed=True表示请求体参数嵌套。多个Body参数默认就是嵌套的
+    confirmed: int = Query(ge=0, description="确认数", default=0),
+    offline: int = Query(ge=0, description="离线数", default=0),
+):
+    print(f"{city.name} 确认数：{confirmed} 离线数：{offline}")
+    return city.dict()
+
+
+"""Request Body - Nested Models 数据格式嵌套的请求体"""
+
+
+class Data(BaseModel):
+    city: List[CityInfo] = None  # 这里就是定义数据格式嵌套的请求体
+    date: date  # 额外的数据类型，还有uuid datetime bytes frozenset等，参考：https://fastapi.tiangolo.com/tutorial/extra-data-types/
+    # 用pydantic定义请求体数据，对字段进行校验用Field类型
+    # 使用路径参数十，对字段进行校验用Path类型
+    confirmed: int = Field(ge=0, description="确认数", default=0)
+    offline: int = Field(ge=0, description="离线数", default=0)
+    recovered: int = Field(ge=0, description="恢复数", default=0)
+
+
+@app03.put("/request_body/nested")
+def nested_models(data: Data):
+    return data
+
 
