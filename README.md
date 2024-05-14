@@ -85,13 +85,17 @@ https://stackoverflow.com/questions/70730551/pycharm-debugger-setup-with-fastapi
 12. 如何编写后台任何和测试用例
 
 # 10.Todo Learn
-3-4 
-https://www.imooc.com/video/22985
+3-5
+https://www.imooc.com/video/22986
+0：37
 
 # 11.项目结构
 
 run.py 为主文件，tutorial 和 coronavirus 为该项目的两个应用
 
 fastapi_tutorial 和 pydantic_tutorial 只是简单的脚本演示样例
+
+
+
 
 

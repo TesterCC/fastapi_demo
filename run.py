@@ -49,7 +49,7 @@ app.add_middleware(
 )
 
 
-
+swagger_static_ip = "127.0.0.1"
 
 # resolve issue 1：default swagger ui cdn url can't visit, redocs cdn is of
 # ref: https://www.cnblogs.com/CJTARRR/p/17756327.html
@@ -66,8 +66,8 @@ def swagger_monkey_patch(*args, **kwargs):
         # swagger_js_url='https://cdn.staticfile.org/swagger-ui/5.11.0/swagger-ui-bundle.min.js',  # online inner cdn use
         # swagger_css_url='https://cdn.staticfile.org/swagger-ui/5.11.0/swagger-ui.min.css'
         # after config static path use, need 127.0.0.1
-        swagger_js_url=f'http://127.0.0.1:{api_port}/static/swagger-ui/swagger-ui-bundle.min.js',
-        swagger_css_url=f'http://127.0.0.1:{api_port}/static/swagger-ui/swagger-ui.min.css'
+        swagger_js_url=f'http://{swagger_static_ip}:{api_port}/static/swagger-ui/swagger-ui-bundle.min.js',
+        swagger_css_url=f'http://{swagger_static_ip}:{api_port}/static/swagger-ui/swagger-ui.min.css'
     )
 
 
@@ -82,7 +82,7 @@ def redocs_monkey_patch(*args, **kwargs):
     # after config static path use, need 127.0.0.1
     return get_redoc_html(
         *args, **kwargs,
-        redoc_js_url=f'http://127.0.0.1:{api_port}/static/swagger-ui/redoc.standalone.js',
+        redoc_js_url=f'http://{swagger_static_ip}:{api_port}/static/swagger-ui/redoc.standalone.js',
     )
 
 
