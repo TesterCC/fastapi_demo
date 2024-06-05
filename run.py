@@ -31,7 +31,7 @@ app = FastAPI(
     redoc_url='/redocs',
 )
 
-# add static path, for local use swagger-ui file
+# add static path, for local use swagger-ui file   todo 240605 look fg to change here
 app.mount("/static", StaticFiles(directory="./static"), name="static")  # attention directory path
 
 

@@ -15,6 +15,8 @@ pip install email_validator -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 pip install pytest -i https://pypi.tuna.tsinghua.edu.cn/simple
 
+pip install websockets -i https://pypi.tuna.tsinghua.edu.cn/simple
+
 ## 2.Lesson
 Video: https://www.imooc.com/learn/1299
 Doc: https://geek-docs.com/fastapi/fastapi-tutorials/
@@ -25,6 +27,9 @@ Documentation: https://fastapi.tiangolo.com/zh/tutorial/
 Source Code: https://github.com/tiangolo/fastapi
 Local Example: `~\git_workspace\ws_python\fastapi-tutorial`
 Local Self Github repo: `~\git_workspace\ws_python\fastapi_demo`
+
+WebSockets Demo:
+https://fastapi.tiangolo.com/zh/advanced/websockets/
 
 ## 4.Launch
 write code in main.py, then run command: uvicorn main:app --reload
