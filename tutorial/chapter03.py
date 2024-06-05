@@ -100,8 +100,8 @@ def type_conversion(param: bool = False):
 # http://127.0.0.1:7777/ch03/query/validations?value=abcd1234&alias_name=aa&alias_name=bb&alias_name=cc
 @app03.get("/query/validations")  # 长度+正则表达式验证，比如长度8-16位，以a开头。其它校验方法看Query类的源码
 def query_params_validate(
-    value: str = Query(..., min_length=8, max_length=16, regex="^a"),  # ...换成None就变成选填的参数；正则表达式为：以a开头
-    values: List[str] = Query(["v1", "v2"], alias="alias_name")    # 列表中含字符串类型的元素，这种用法没怎么见过
+        value: str = Query(..., min_length=8, max_length=16, regex="^a"),  # ...换成None就变成选填的参数；正则表达式为：以a开头
+        values: List[str] = Query(["v1", "v2"], alias="alias_name")  # 列表中含字符串类型的元素，这种用法没怎么见过
 ):  # 多个查询参数的列表。参数别名
     return value, values
 
@@ -113,7 +113,8 @@ class CityInfo(BaseModel):
     name: str = Field(..., example="Beijing")  # example是注解的作用，值不会被验证
     country: str
     country_code: str = None  # 给一个默认值
-    country_population: int = Field(default=800, title="人口数量", description="国家的人口数量", ge=800)   # display more info in swagger doc
+    country_population: int = Field(default=800, title="人口数量", description="国家的人口数量",
+                                    ge=800)  # display more info in swagger doc
 
     # use sub config, can see example in swagger doc
     class Config:
@@ -138,11 +139,11 @@ def city_info(city: CityInfo):
 
 @app03.put("/request_body/city/{name}")
 def mix_city_info(
-    name: str,   # 城市名称
-    city01: CityInfo,
-    city02: CityInfo,  # 城市信息，Body可以是多个的  比如city02 也可以用 CityInfo2 模型
-    confirmed: int = Query(ge=0, description="确认数", default=0),
-    offline: int = Query(ge=0, description="离线数", default=0),
+        name: str,  # 城市名称
+        city01: CityInfo,
+        city02: CityInfo,  # 城市信息，Body可以是多个的  比如city02 也可以用 CityInfo2 模型
+        confirmed: int = Query(ge=0, description="确认数", default=0),
+        offline: int = Query(ge=0, description="离线数", default=0),
 ):
     if name == "SH":
         return {"Shanghai": {"confirmed": confirmed, "offline": offline}}
@@ -151,9 +152,9 @@ def mix_city_info(
 
 @app03.put("/request_body/multiple/parameters")
 def body_multiple_parameters(
-    city: CityInfo = Body(..., embed=True),  # 当只有一个Body参数的时候，embed=True表示请求体参数嵌套。多个Body参数默认就是嵌套的
-    confirmed: int = Query(ge=0, description="确认数", default=0),
-    offline: int = Query(ge=0, description="离线数", default=0),
+        city: CityInfo = Body(..., embed=True),  # 当只有一个Body参数的时候，embed=True表示请求体参数嵌套。多个Body参数默认就是嵌套的
+        confirmed: int = Query(ge=0, description="确认数", default=0),
+        offline: int = Query(ge=0, description="离线数", default=0),
 ):
     print(f"{city.name} 确认数：{confirmed} 离线数：{offline}")
     return city.dict()
@@ -172,8 +173,33 @@ class Data(BaseModel):
     recovered: int = Field(ge=0, description="恢复数", default=0)
 
 
+# 对查询参数进行校验用Query类
 @app03.put("/request_body/nested")
 def nested_models(data: Data):
     return data
 
 
+"""Cookie 和 Header 参数"""
+
+
+# Header请求头参数自动转换的功能
+# 处理请求头中key重复的参数
+@app03.get("/cookie")  # 效果只能用Postman测试
+def cookie(cookie_id: Optional[str] = Cookie(None)):  # 定义Cookie参数需要使用Cookie类，否则就是查询参数
+    return {"cookie_id": cookie_id}
+
+
+@app03.get("/cookie2")  # 效果只能用Postman测试
+def cookie(cookie: Optional[str] = Cookie(None)):  # 定义Cookie参数需要使用Cookie类，否则就是查询参数
+    return {"cookie": cookie}
+
+
+@app03.get("/header")
+def header(user_agent: Optional[str] = Header(None, convert_underscores=True), x_token: List[str] = Header(None)):
+    """这些内容会显示在swagger文档的desription中
+    有些HTTP代理和服务器是不允许在请求头中带有下划线的，所以Header提供convert_underscores属性让设置
+    :param user_agent: convert_underscores=True 会把 user_agent 变成 user-agent
+    :param x_token: x_token是包含多个值的列表
+    :return:
+    """
+    return {"User-Agent": user_agent, "x_token": x_token}
