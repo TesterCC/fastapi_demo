@@ -9,6 +9,7 @@ import uvicorn
 
 
 from tutorial import app03, app04
+from devlab import lab00
 
 # from tutorial.chapter03 import app03
 # from tutorial.chapter04 import app04
@@ -97,6 +98,8 @@ app.include_router(app04, prefix='/ch04', tags=['第四章 响应处理和FastAP
 # app.include_router(app06, prefix='/ch06', tags=['第六章 安全、认证和授权'])
 # app.include_router(app07, prefix='/ch07', tags=['第七章 FastAPI的数据库操作和多应用的目录结构设计'])
 # app.include_router(app08, prefix='/ch08', tags=['第八章 中间件、CORS、后台任务、测试用例'])
+
+app.include_router(lab00, prefix='/lab00', tags=['实验1 基本路由'])
 
 
 if __name__ == '__main__':

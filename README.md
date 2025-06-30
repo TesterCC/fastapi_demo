@@ -5,17 +5,17 @@ Python 3.7+
 
 ## 1.Installation
 
-pip install fastapi -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install fastapi -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
-pip install "uvicorn[standard]" -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install "uvicorn[standard]" -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
-pip install SQLAlchemy -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install SQLAlchemy -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
-pip install email_validator -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install email_validator -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
-pip install pytest -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install pytest -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
-pip install websockets -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install websockets -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 ## 2.Lesson
 Video: https://www.imooc.com/learn/1299
@@ -46,14 +46,16 @@ $ source fastapi_demo/bin/activate
 > fastapi_demo\Scripts\activate.bat
 
 # update pip tools
-python.exe -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
+python.exe -m pip install --upgrade pip -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 # update pip package
-pip install -U pip setuptools -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -U pip setuptools -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 # export dependencies
 pip freeze > ./req.txt
 ```
+
+`pip install python-multipart -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple`
 
 ## 6.API docs
 
@@ -95,10 +97,13 @@ https://www.imooc.com/video/22992
 
 # 11.项目结构
 
-run.py 为主文件，tutorial 和 coronavirus 为该项目的两个应用
+run.py 为主文件，
 
-fastapi_tutorial 和 pydantic_tutorial 只是简单的脚本演示样例
+tutorial 和 coronavirus 为该项目的两个应用，tutorial 课程视频路由API
 
+fastapi_tutorial 和 pydantic_tutorial 只是简单的脚本演示样例，fastapi_tutorial主要放置独立运行测试API
+
+devlab  调研开发功能路由API
 
 
 
