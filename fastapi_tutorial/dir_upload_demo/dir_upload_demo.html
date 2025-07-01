@@ -62,6 +62,13 @@
             background: #95a5a6;
             cursor: not-allowed;
         }
+        .btn-cancel {
+            background: #e74c3c;
+            margin-left: 10px;
+        }
+        .btn-cancel:hover {
+            background: #c0392b;
+        }
         #fileInput {
             display: none;
         }
@@ -126,6 +133,7 @@
         <div id="selectedFiles" class="file-list"></div>
         
         <button class="btn" id="uploadBtn" disabled>开始上传</button>
+        <button class="btn btn-cancel" id="cancelBtn" style="display:none;">取消上传</button>
         
         <div class="progress-container" id="progressContainer">
             <div class="progress-bar">
@@ -143,6 +151,7 @@
             const fileInput = document.getElementById('fileInput');
             const selectBtn = document.getElementById('selectBtn');
             const uploadBtn = document.getElementById('uploadBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
             const dropZone = document.getElementById('dropZone');
             const selectedFilesDiv = document.getElementById('selectedFiles');
             const progressContainer = document.getElementById('progressContainer');
@@ -152,6 +161,7 @@
             const errorMsg = document.getElementById('errorMsg');
             
             let filesToUpload = [];
+            let currentXhr = null; // 保存当前的XHR对象，用于取消上传
             
             // 选择文件夹按钮点击事件
             selectBtn.addEventListener('click', () => {
@@ -218,6 +228,7 @@
                 }
                 
                 uploadBtn.disabled = true;
+                cancelBtn.style.display = 'inline-block';
                 progressContainer.style.display = 'block';
                 statusDiv.textContent = '正在上传...';
                 errorMsg.textContent = '';
@@ -225,31 +236,127 @@
                 try {
                     const formData = new FormData();
                     
-                    // 添加所有文件到FormData，保留相对路径
-                    filesToUpload.forEach(file => {
-                        formData.append('files', file, file.webkitRelativePath);
+                    // 收集所有路径到一个数组
+                    const pathsArray = filesToUpload.map(file => file.webkitRelativePath || file.name);
+                    
+                    // 添加所有文件到FormData
+                    filesToUpload.forEach((file, index) => {
+                        formData.append('files', file);
+                        console.log(`添加文件 ${index}: ${file.name}, 大小: ${file.size} 字节, 类型: ${file.type}, 路径: ${file.webkitRelativePath || '(无相对路径)'}`);
                     });
+                    
+                    // 将路径数组作为JSON字符串添加到FormData
+                    const pathsJson = JSON.stringify(pathsArray);
+                    formData.append('paths', pathsJson);
+                    console.log('路径数组:', pathsArray);
+                    console.log('JSON路径字符串:', pathsJson);
+                    console.log('JSON路径字符串长度:', pathsJson.length);
+                    
+                    // 计算总文件大小用于进度计算
+                    const totalSize = filesToUpload.reduce((total, file) => total + file.size, 0);
+                    let uploadedSize = 0;
                     
                     // 发送请求
-                    const response = await fetch('/upload', {
-                        method: 'POST',
-                        body: formData,
-                    });
+                    // 使用完整URL，确保能连接到后端服务器
+                    const serverUrl = 'http://localhost:8000';
                     
-                    if (!response.ok) {
-                        throw new Error(`上传失败: ${response.statusText}`);
+                    // 使用XMLHttpRequest来监控上传进度
+                    const xhr = new XMLHttpRequest();
+                    currentXhr = xhr; // 保存当前XHR对象，用于取消上传
+                    
+                    // 设置超时时间（毫秒）
+                    xhr.timeout = 120000; // 2分钟超时
+                    
+                    // 打开连接
+                    xhr.open('POST', `${serverUrl}/upload`);
+                    
+                    // 超时处理
+                    xhr.ontimeout = function() {
+                        statusDiv.textContent = '请求超时，请检查网络连接或服务器状态';
+                        console.error('请求超时');
+                        resetUploadState();
+                    };
+                    
+                    // 不要手动设置Content-Type，让浏览器自动处理multipart/form-data边界
+                    // xhr.setRequestHeader('Content-Type', 'multipart/form-data');
+                    
+                    // 打印FormData内容，用于调试
+                    console.log('FormData内容:');
+                    for (let pair of formData.entries()) {
+                        console.log(pair[0] + ': ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
                     }
                     
-                    const result = await response.json();
-                    statusDiv.textContent = `上传成功! 保存了 ${result.saved_files} 个文件`;
-                    progressFill.style.width = '100%';
-                    progressText.textContent = '100%';
+                    // 监听上传进度
+                    xhr.upload.addEventListener('progress', (event) => {
+                        if (event.lengthComputable) {
+                            const percentComplete = Math.round((event.loaded / event.total) * 100);
+                            progressFill.style.width = `${percentComplete}%`;
+                            progressText.textContent = `${percentComplete}%`;
+                        }
+                    });
+                    
+                    // 设置完成回调
+                    xhr.onload = async function() {
+                        try {
+                            console.log('收到响应:', xhr.status, xhr.statusText);
+                            console.log('响应头:', xhr.getAllResponseHeaders());
+                            console.log('响应内容:', xhr.responseText);
+                            
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                const result = JSON.parse(xhr.responseText);
+                                console.log('解析后的响应:', result);
+                                statusDiv.textContent = `上传成功! 保存了 ${result.saved_files} 个文件`;
+                                progressFill.style.width = '100%';
+                                progressText.textContent = '100%';
+                                // 重置上传状态
+                                resetUploadState();
+                            } else {
+                                statusDiv.textContent = `上传失败: ${xhr.status} ${xhr.statusText}`;
+                                console.error(`上传失败: ${xhr.status} ${xhr.statusText}`);
+                                resetUploadState();
+                            }
+                        } catch (error) {
+                            statusDiv.textContent = `处理响应时出错: ${error.message}`;
+                            console.error('处理响应时出错:', error);
+                            console.error('原始响应:', xhr.responseText);
+                            resetUploadState();
+                        }
+                    };
+                    
+                    // 设置错误回调
+                    xhr.onerror = function() {
+                        statusDiv.textContent = '网络错误，请检查服务器连接';
+                        console.error('网络错误，请检查服务器连接');
+                        resetUploadState();
+                    };
+                    
+                    // 发送请求
+                    xhr.send(formData);
+                    
+                    // 注意：不需要额外的Promise，因为我们已经在xhr.onload和xhr.onerror中处理了响应
+                    // 这里不再重新定义onload和onerror回调，避免覆盖之前设置的回调函数
                     
                 } catch (error) {
                     showError(error.message);
-                    uploadBtn.disabled = false;
+                    resetUploadState();
                 }
             });
+            
+            // 取消按钮点击事件
+            cancelBtn.addEventListener('click', () => {
+                if (currentXhr) {
+                    currentXhr.abort(); // 取消上传
+                    showError('上传已取消');
+                    resetUploadState();
+                }
+            });
+            
+            // 重置上传状态
+            function resetUploadState() {
+                uploadBtn.disabled = false;
+                cancelBtn.style.display = 'none';
+                currentXhr = null;
+            }
             
             // 显示错误信息
             function showError(message) {
