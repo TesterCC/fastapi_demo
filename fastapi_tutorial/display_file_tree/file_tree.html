@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件目录树展示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .tree-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            max-height: 600px;
+            overflow: auto;
+        }
+        .tree {
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .tree ul {
+            list-style-type: none;
+            padding-left: 20px;
+            margin: 0;
+        }
+        .tree li {
+            position: relative;
+            padding: 2px 0;
+        }
+        .tree .caret {
+            cursor: pointer;
+            user-select: none;
+        }
+        .tree .caret::before {
+            content: "\25B6";
+            color: #555;
+            display: inline-block;
+            margin-right: 6px;
+            font-size: 10px;
+        }
+        .tree .caret-down::before {
+            transform: rotate(90deg);
+        }
+        .tree .nested {
+            display: none;
+        }
+        .tree .active {
+            display: block;
+        }
+        .tree .file {
+            padding-left: 18px;
+        }
+        .tree .file::before {
+            content: "📄";
+            margin-right: 6px;
+        }
+        .tree .directory::before {
+            content: "📁";
+            margin-right: 6px;
+        }
+        .tree .directory.open::before {
+            content: "📂";
+        }
+        .tree .error {
+            color: #e74c3c;
+            font-style: italic;
+        }
+        .tree .error::before {
+            content: "⚠️";
+            margin-right: 6px;
+        }
+        .tree .more::before {
+            content: "...";
+            margin-right: 6px;
+            color: #999;
+        }
+        .tree .size {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .tree .path {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-left: 5px;
+            display: none;
+        }
+        .tree li:hover .path {
+            display: inline;
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        .loading::after {
+            content: "";
+            animation: dots 1.5s infinite;
+        }
+        @keyframes dots {
+            0% { content: ""; }
+            25% { content: "."; }
+            50% { content: ".."; }
+            75% { content: "..."; }
+            100% { content: ""; }
+        }
+        .status-bar {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+            display: none;
+        }
+        .expand-all, .collapse-all {
+            margin-top: 10px;
+            background: #95a5a6;
+        }
+        .expand-all:hover, .collapse-all:hover {
+            background: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>文件目录树展示</h1>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label for="pathInput">目录路径:</label>
+                <input type="text" id="pathInput" placeholder="输入目录路径，留空表示当前目录">
+            </div>
+            <div class="input-group" style="max-width: 150px;">
+                <label for="depthInput">最大深度:</label>
+                <input type="number" id="depthInput" value="3" min="1" max="10">
+            </div>
+            <div class="input-group" style="max-width: 150px;">
+                <label>&nbsp;</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeFilesCheckbox" checked>
+                    <label for="includeFilesCheckbox">包含文件</label>
+                </div>
+            </div>
+            <div class="input-group" style="max-width: 100px;">
+                <label>&nbsp;</label>
+                <button id="fetchBtn">获取目录树</button>
+            </div>
+        </div>
+        
+        <div class="tree-container">
+            <div id="loading" class="loading" style="display: none;">加载中</div>
+            <div id="error" class="error" style="display: none;"></div>
+            <div class="tree" id="fileTree"></div>
+        </div>
+        
+        <div id="statusBar" class="status-bar"></div>
+        
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="expand-all" id="expandAllBtn">展开全部</button>
+            <button class="collapse-all" id="collapseAllBtn">折叠全部</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pathInput = document.getElementById('pathInput');
+            const depthInput = document.getElementById('depthInput');
+            const includeFilesCheckbox = document.getElementById('includeFilesCheckbox');
+            const fetchBtn = document.getElementById('fetchBtn');
+            const fileTree = document.getElementById('fileTree');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const statusBar = document.getElementById('statusBar');
+            const expandAllBtn = document.getElementById('expandAllBtn');
+            const collapseAllBtn = document.getElementById('collapseAllBtn');
+            
+            // 初始加载当前目录
+            fetchFileTree();
+            
+            // 获取按钮点击事件
+            fetchBtn.addEventListener('click', fetchFileTree);
+            
+            // 展开全部按钮
+            expandAllBtn.addEventListener('click', () => {
+                const carets = document.querySelectorAll('.caret');
+                carets.forEach(caret => {
+                    caret.classList.add('caret-down');
+                    const directory = caret.parentElement.querySelector('.directory');
+                    if (directory) directory.classList.add('open');
+                    const nested = caret.parentElement.querySelector('.nested');
+                    if (nested) nested.classList.add('active');
+                });
+            });
+            
+            // 折叠全部按钮
+            collapseAllBtn.addEventListener('click', () => {
+                const carets = document.querySelectorAll('.caret');
+                carets.forEach(caret => {
+                    caret.classList.remove('caret-down');
+                    const directory = caret.parentElement.querySelector('.directory');
+                    if (directory) directory.classList.remove('open');
+                    const nested = caret.parentElement.querySelector('.nested');
+                    if (nested) nested.classList.remove('active');
+                });
+            });
+            
+            // 获取文件树数据
+            function fetchFileTree() {
+                const path = pathInput.value.trim();
+                const maxDepth = depthInput.value;
+                const includeFiles = includeFilesCheckbox.checked;
+                
+                // 显示加载中
+                loading.style.display = 'block';
+                error.style.display = 'none';
+                statusBar.style.display = 'none';
+                fileTree.innerHTML = '';
+                
+                // 禁用按钮，防止重复点击
+                fetchBtn.disabled = true;
+                fetchBtn.textContent = '加载中...';
+                
+                // 记录开始时间
+                const startTime = new Date();
+                
+                // 构建API URL
+                const apiUrl = `/get_file_tree?path=${encodeURIComponent(path)}&max_depth=${maxDepth}&include_files=${includeFiles}`;
+                
+                // 发送请求
+                fetch(apiUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(err.detail || '获取文件树失败');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // 隐藏加载中
+                        loading.style.display = 'none';
+                        
+                        // 计算耗时
+                        const endTime = new Date();
+                        const timeElapsed = (endTime - startTime) / 1000;
+                        
+                        // 渲染文件树
+                        if (data.status === 'success') {
+                            // 显示路径信息
+                            const basePath = data.meta?.base_path || data.base_path || '';
+                            if (basePath && pathInput.value.trim() === '') {
+                                pathInput.value = basePath;
+                            }
+                            
+                            // 渲染树结构
+                            renderTree(data.tree, fileTree);
+                            
+                            // 添加点击事件
+                            addToggleEvents();
+                            
+                            // 如果树为空，显示提示
+                            if (!data.tree || (data.tree.children && data.tree.children.length === 0)) {
+                                fileTree.innerHTML = '<div style="padding: 10px; color: #7f8c8d;">该目录为空</div>';
+                            }
+                            
+                            // 更新状态栏
+                            let fileCount = 0;
+                            let dirCount = 0;
+                            
+                            // 递归计算文件和目录数量
+                            function countItems(node) {
+                                if (!node) return;
+                                if (node.type === 'file') {
+                                    fileCount++;
+                                } else if (node.type === 'directory') {
+                                    dirCount++;
+                                    if (node.children) {
+                                        node.children.forEach(countItems);
+                                    }
+                                }
+                            }
+                            
+                            countItems(data.tree);
+                            
+                            // 显示状态信息
+                            statusBar.style.display = 'block';
+                            statusBar.innerHTML = `
+                                <strong>统计信息:</strong> 
+                                ${dirCount} 个目录, 
+                                ${fileCount} 个文件, 
+                                加载耗时: ${timeElapsed.toFixed(2)}秒
+                            `;
+                        } else {
+                            throw new Error(data.message || '获取文件树失败');
+                        }
+                    })
+                    .catch(err => {
+                        // 显示错误信息
+                        loading.style.display = 'none';
+                        error.style.display = 'block';
+                        error.textContent = `错误: ${err.message}`;
+                    })
+                    .finally(() => {
+                        // 恢复按钮状态
+                        fetchBtn.disabled = false;
+                        fetchBtn.textContent = '获取目录树';
+                    });
+            }
+            
+            // 渲染文件树
+            function renderTree(node, container) {
+                if (!node) return;
+                
+                const ul = document.createElement('ul');
+                
+                // 如果是根节点，不创建li
+                if (container === fileTree) {
+                    renderChildren(node, ul);
+                    container.appendChild(ul);
+                } else {
+                    const li = document.createElement('li');
+                    
+                    if (node.type === 'directory') {
+                        // 目录节点
+                        const span = document.createElement('span');
+                        span.className = 'caret';
+                        li.appendChild(span);
+                        
+                        const dirSpan = document.createElement('span');
+                        dirSpan.className = node.error ? 'directory error' : 'directory';
+                        dirSpan.textContent = node.name;
+                        
+                        if (node.path) {
+                            const pathSpan = document.createElement('span');
+                            pathSpan.className = 'path';
+                            pathSpan.textContent = `(${node.path})`;
+                            dirSpan.appendChild(pathSpan);
+                        }
+                        
+                        // 如果有错误信息，显示错误
+                        if (node.error) {
+                            const errorSpan = document.createElement('span');
+                            errorSpan.className = 'error';
+                            errorSpan.textContent = ` - ${node.error}`;
+                            dirSpan.appendChild(errorSpan);
+                        }
+                        
+                        li.appendChild(dirSpan);
+                        
+                        if (node.children && node.children.length > 0) {
+                            const nested = document.createElement('ul');
+                            nested.className = 'nested';
+                            renderChildren(node, nested);
+                            li.appendChild(nested);
+                        }
+                        
+                        // 如果达到最大深度，显示提示
+                        if (node.max_depth_reached) {
+                            const maxDepthLi = document.createElement('li');
+                            const maxDepthSpan = document.createElement('span');
+                            maxDepthSpan.className = 'more';
+                            maxDepthSpan.textContent = '已达到最大深度限制...';
+                            maxDepthLi.appendChild(maxDepthSpan);
+                            
+                            const nested = li.querySelector('.nested') || document.createElement('ul');
+                            if (!li.querySelector('.nested')) {
+                                nested.className = 'nested';
+                                li.appendChild(nested);
+                            }
+                            nested.appendChild(maxDepthLi);
+                        }
+                    } else if (node.type === 'file') {
+                        // 文件节点
+                        const fileSpan = document.createElement('span');
+                        fileSpan.className = node.error ? 'file error' : 'file';
+                        fileSpan.textContent = node.name;
+                        
+                        // 显示文件大小（如果有）
+                        if (node.size !== undefined || node.size_bytes !== undefined) {
+                            const sizeSpan = document.createElement('span');
+                            sizeSpan.className = 'size';
+                            const size = node.size_bytes !== undefined ? node.size_bytes : node.size;
+                            sizeSpan.textContent = node.size || `(${formatFileSize(size)})`;
+                            fileSpan.appendChild(sizeSpan);
+                        }
+                        
+                        // 显示文件路径（悬停时）
+                        if (node.path) {
+                            const pathSpan = document.createElement('span');
+                            pathSpan.className = 'path';
+                            pathSpan.textContent = `(${node.path})`;
+                            fileSpan.appendChild(pathSpan);
+                        }
+                        
+                        // 如果有错误信息，显示错误
+                        if (node.error) {
+                            const errorSpan = document.createElement('span');
+                            errorSpan.className = 'error';
+                            errorSpan.textContent = ` - ${node.error}`;
+                            fileSpan.appendChild(errorSpan);
+                        }
+                        
+                        li.appendChild(fileSpan);
+                    } else if (node.type === 'more') {
+                        // 更多节点
+                        const moreSpan = document.createElement('span');
+                        moreSpan.className = 'more';
+                        moreSpan.textContent = node.name;
+                        li.appendChild(moreSpan);
+                    }
+                    
+                    container.appendChild(li);
+                }
+            }
+            
+            // 渲染子节点
+            function renderChildren(node, container) {
+                if (node.children && node.children.length > 0) {
+                    node.children.forEach(child => {
+                        renderTree(child, container);
+                    });
+                }
+            }
+            
+            // 添加折叠/展开事件
+            function addToggleEvents() {
+                const carets = document.querySelectorAll('.caret');
+                carets.forEach(caret => {
+                    caret.addEventListener('click', function() {
+                        this.classList.toggle('caret-down');
+                        const directory = this.parentElement.querySelector('.directory');
+                        if (directory) directory.classList.toggle('open');
+                        const nested = this.parentElement.querySelector('.nested');
+                        if (nested) nested.classList.toggle('active');
+                    });
+                });
+            }
+            
+            // 格式化文件大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        });
+    </script>
+</body>
+</html>
