@@ -17,6 +17,14 @@ pip install pytest -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 pip install websockets -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
+官方文档说明：https://fastapi.tiangolo.com/zh/tutorial/#fastapi
+
+```
+ext:
+当您使用 pip install "fastapi[standard]" 进行安装时，它会附带一些默认的可选标准依赖项。
+如果您不想安装这些可选依赖，可以选择安装 pip install fastapi。
+```
+
 ## 2.Lesson
 Video: https://www.imooc.com/learn/1299
 Doc: https://geek-docs.com/fastapi/fastapi-tutorials/
